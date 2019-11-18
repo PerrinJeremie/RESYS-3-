@@ -1,0 +1,75 @@
+\documentclass{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage[frenchb]{babel} % If you write in French
+\usepackage[frenchb]{babel} % If you write in English
+
+\usepackage{graphicx}
+
+
+\begin{document}
+\begin{frame}
+	\frametitle{The Early Hematopoietic  Process}
+	\begin{columns}[T] % align columns
+		\begin{column}{.48\textwidth}
+			\begin{figure}
+				\includegraphics*[width=  \linewidth]{./images/hematopoieisis.jpg}
+			\end{figure}
+		\end{column}%
+		\hfill%
+		\begin{column}{.48\textwidth}
+			Pluripotent cells differentiate into:
+			\begin{itemize}
+				\item Endothelial Cells
+				\item Hematopoietic Cells
+			\end{itemize}
+		\end{column}%
+	\end{columns}
+\end{frame}
+
+\begin{frame}
+	\frametitle{The Experiment}
+	\begin{columns}[T] % align columns
+		\begin{column}{.48\textwidth}
+			\begin{figure}
+				\includegraphics*[width=  \linewidth]{./images/sampling.png}
+			\end{figure}
+			\begin{figure}
+				\includegraphics*[width=  \linewidth]{./images/numbers.png}
+			\end{figure}
+		\end{column}%
+		\hfill%
+		\begin{column}{.48\textwidth}
+			The data acquired:\\
+			\begin{itemize}
+				\item 3934 single cells
+				\item 46 genes
+				\item Binarized expression
+			\end{itemize}
+		\end{column}%
+	\end{columns}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Categorizing genes}
+	\begin{columns}[T] % align columns
+		\begin{column}{.48\textwidth}
+			\begin{figure}
+				\includegraphics*[width=  \linewidth]{../Preliminary/genepca.png}
+			\end{figure}
+		\end{column}%
+		\hfill%
+		\begin{column}{.6\textwidth}
+			Steps :\\
+			\begin{itemize}
+			\item Each gene is a 5D vector.
+			\item Principal Component Analysis to reduce dimensions.
+			\item K-means as unsupervised clustering.
+			\end{itemize}
+			Genes grouped as expected.\\
+		\end{column}%
+	\end{columns}
+\end{frame}
+
+
+\end{document}

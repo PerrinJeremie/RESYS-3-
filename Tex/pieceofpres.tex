@@ -1,0 +1,324 @@
+
+\documentclass[14pt,aspectratio=169]{beamer}
+\usetheme{Goettingen} %other options incld Madrid, Marburg, Boadilla, Goettingen, Hannover
+%\usepackage[margin=1in]{geometry}           
+%\geometry{letterpaper}                 
+%\usepackage{graphicx}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+\usepackage{cite}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage{amsaddr}
+
+\usepackage[english]{babel}
+\usepackage{hyperref}
+\usepackage{amssymb}
+
+\setbeamertemplate{itemize items}[circle]
+\definecolor{mahog}{rgb}{0,.4,.4} %{0, 0.6,0.6}, {0,.8,.4}, {.2,.8,.2}
+\usecolortheme[named=mahog]{structure}
+
+
+\usepackage{amsmath}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\EX}{\mathbb{E}}
+
+\let\bfseriesbis=\bfseries \def\bfseries{\sffamily\bfseriesbis}
+
+\newcommand{\rfig}[1]{Figure~\ref{#1}}
+\newenvironment{point}[1]%
+{\subsection*{#1}}%
+{}
+
+\setlength{\parskip}{0.3\baselineskip}
+
+\title{Hematopoietic Regulatory Network Inference}
+%\subtitle{}
+\author{Jeremie Perrin, Corbin Hopper}
+\institute{ENS Cachan}
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+ 
+ \begin{frame}
+ 	\frametitle{The Early Hematopoietic  Process}
+ 	\begin{columns}[T] % align columns
+ 		\begin{column}{.48\textwidth}
+ 			\begin{figure}
+ 				\includegraphics*[width=  \linewidth]{./images/hematopoieisis.jpg}
+ 			\end{figure}
+ 		\end{column}%
+ 		\hfill%
+ 		\begin{column}{.48\textwidth}
+ 			Pluripotent cells differentiate into:
+ 			\begin{itemize}
+ 				\item Endothelial Cells
+ 				\item Hematopoietic Cells
+ 			\end{itemize}
+ 		\end{column}%
+ 	\end{columns}
+ \end{frame}
+ 
+ \begin{frame}
+ 	\frametitle{The Experiment}
+ 	\begin{columns}[T] % align columns
+ 		\begin{column}{.48\textwidth}
+ 			\begin{figure}
+ 				\includegraphics*[width=  \linewidth]{./images/sampling.png}
+ 			\end{figure}
+ 			\begin{figure}
+ 				\includegraphics*[width=  \linewidth]{./images/numbers.png}
+ 			\end{figure}
+ 		\end{column}%
+ 		\hfill%
+ 		\begin{column}{.48\textwidth}
+ 			The data acquired:\\
+ 			\begin{itemize}
+ 				\item 3934 single cells
+ 				\item 46 genes
+ 				\item Binarized expression
+ 			\end{itemize}
+ 		\end{column}%
+ 	\end{columns}
+ \end{frame}
+ 
+ \begin{frame}
+ 	\frametitle{Categorizing genes}
+ 	\begin{columns}[T] % align columns
+ 		\begin{column}{.48\textwidth}
+ 			\begin{figure}
+ 				\includegraphics*[width=  \linewidth]{../Preliminary/genepca.png}
+ 			\end{figure}
+ 		\end{column}%
+ 		\hfill%
+ 		\begin{column}{.6\textwidth}
+ 			Steps :\\
+ 			\begin{itemize}
+ 				\item Each gene is a 5D vector.
+ 				\item Principal Component Analysis to reduce dimensions.
+ 				\item K-means as unsupervised clustering.
+ 			\end{itemize}
+ 			Genes grouped as expected (known cell-type specific genes are grouped together).
+ 		\end{column}%
+ 	\end{columns}
+ \end{frame}
+ 
+
+\begin{frame}
+\frametitle{Entropy Inference: Approach}
+\small
+\begin{itemize}
+\item Maximum Likelihood Like
+\item Maximize mutual information $I(X;Y)$ of graph $G(V,E)$
+\item But many random distributions have some small probability of being correlated
+\end{itemize}
+
+\begin{equation} \label{eq:1}
+\argmax_{E \in G} \sum_{v \in V} I(v;e_{in}) - \EX[I(A;B)]
+\end{equation}
+
+\end{frame}
+
+\begin{frame}
+
+\frametitle{Entropy Inference: Approach}
+\begin{itemize}
+\item Optimization can consider in-edges to each node independently
+\small
+$$\argmax_{E \in G} \sum_{v \in V} I(v;e_{in}) - \EX[I(A;B)] = \sum_{v \in V} \argmax_{e_{in} \in E} I(v;e_{in}) - \EX[I(A;B)] $$
+\item Optimize is independent of $p(v)$
+$$ = \sum_{v \in V} \argmin_{e_{in} \in v} H(v|e_{in}) - \EX[H(A|B)]  $$
+\item Minimize the uncertainty of each gene over the set of genes that regulate it 
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Entropy Inference: Approach}
+How to simplify $\EX[H(A|B)]$  ?
+\begin{itemize}
+\item Let $a$ be a vector of length $n$, $b$ an $n$ by $m$ matrix 
+\item Assume $a$ and columns of $b$ are from the same set of random distributions
+\item As $n$ approaches infinity, the probability that all possible $2^m$ vectors are in $b$ approaches $1$, and so:
+$$ \EX[H(A|B)] \approx \log2(m+1) - \log2(m) $$
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Entropy Inference: Algorithm}
+\small
+\fbox{%
+    \parbox{\textwidth}{%
+\textbf{Infer Graph}
+
+Begin with a fully connected graph $G(V,E)$.
+
+For each vertex $v \in V$:
+
+\hspace{.5 cm} if $H(v) = 0$: remove v
+
+For each vertex $v \in V$:
+
+\hspace{.5 cm}  Infer Node (v)
+}}
+
+\fbox{%
+    \parbox{\textwidth}{%
+\textbf{Infer Node (v)}
+
+Let w be the set of all predecessors of v, such that $(w_i,v) \in G$.
+
+For each directed edge (u,v):
+
+\hspace{.5 cm}  Let w\char`\\u be the set w, excluding vertex u.
+
+\hspace{.5 cm} If $H(v|w\char`\\u) - H(v|w) \leq \EX[H(Y|X) - H(Y|X\char`\\x)]$ : \hspace{.2 cm} 
+
+\hspace{1 cm} Remove edge (u,v)
+
+\hspace{1 cm} Infer Node (v)
+    }%
+}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Entropy Inference: Algorithm}
+\small
+$$ \sum_{v \in V} \argmin_{e_{in} \in v} H(v|e_{in}) - \EX[H(A|B)]  =  \sum_{v \in V} \argmin_{e_{in} \in v} H(v|e_{in}) - \log_2(\frac{m+1}{m}) $$
+Remove Edge if:
+\begin{align}
+\begin{split}
+H(v|e_1,...,e_{m-1}) -  H(v|e_1,...,e_m) &\leq \EX[{H(a|b_1,...,b_{m-1}) -  H(a|b_1,...,b_m)}] \\ \\
+H(v|e_1,...,e_{m-1}) -  H(v|e_1,...,e_m)  &\leq \log_2(\frac{m^2}{m^2-1})  
+\end{split}
+\end{align}
+\end{frame}
+
+\begin{frame}
+\frametitle{Entropy Inference: Algorithm}
+Why top down and not bottom up?
+\begin{itemize}
+\item Let there be a set of edges that collectively reduce $H(Y|X)$, but individually do not
+\item Example of XOR: $H(Y|x_1)=H(Y|x_2)=H(Y)$, but $H(Y|x_1,x_2)=0$
+\item Top Down: removing any edge increases $H(Y|X)$, so none are removed
+\item Bottom up: algorithm checks edges one at a time, adds none, and stops
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Entropy Inference: Performance}
+\begin{itemize}
+\item Perfect on asymetric binary problems such as $Y=(x_1\hspace{.1cm} NAND\hspace{.1cm} x_2\hspace{.1cm} NAND\hspace{.1cm} x_3)\hspace{.1cm} AND\hspace{.1cm} (x_4\hspace{.1cm} OR\hspace{.1cm} x_5)$
+\item[]
+\item Undirected for symetric binary problems such as $Y=x_1 \hspace{.1cm}XOR \hspace{.1cm}x_2$
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Entropy Inference: Performance}
+\begin{itemize}
+\item Terrible on benchmark tests (BNLearn: Lizards, Coronary, Asia)
+\item[]
+\item Not robust to noise, poor performance on noisy binary problems
+\item[]
+\item Threshold to remove edges may be too lenient for $n < 2^m$, since $\EX[H(A|B)]$ assumption would not hold
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Entropy Inference: Hematopoietic Data}
+\begin{itemize}
+\item 4 genes were removed since their entropy alone was 0 (housekeeping) 
+\item Algorithm removes 7 more genes, reducing the total to 35
+\item Resulting average in-degree and out-degree is 28
+\item Since $n < 2^m$ entropy inference is too lenient and graph is too dense
+\item Instead used as preprocessing technique, followed by MIIC
+\end{itemize}
+\end{frame}
+
+% poss some frames in between
+
+\begin{frame}
+\frametitle{Inferred Hematopoietic Regulatory Network}
+
+%2 examples one makes sense one doesn't
+
+\begin{figure}
+	\includegraphics*[height = 0.55\textheight]{../Datasets/miic-trimmed/miic-trimmed.png}
+\end{figure}
+\begin{itemize}
+\item Cdh1
+	\begin{itemize}
+	\item High precursor expression levels
+	\item Clustered as hematopoietic
+	\item Biologically produces epithelial cadherin
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Inferred Hematopoietic Regulatory Network}
+
+\begin{figure}
+	\includegraphics*[height = 0.55\textheight]{../Datasets/miic-trimmed/miic-trimmed.png}
+\end{figure}
+\begin{itemize}
+\item Cdh5
+	\begin{itemize}
+	\item Clustered as endothelial
+	\item Biologically linked to the process of endothelial development
+	% necessary for endothelial polarity during embryonic development.
+	\item Inferred hub with in-degree of 6 and an out-degree of 7
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Their Network Inference Method}
+	 	\begin{columns}[T] % align columns
+		\begin{column}{.48\textwidth}
+			\begin{figure}
+				\includegraphics*[width=  \linewidth]{../Biblio/images/pap_network.png}
+			\end{figure}
+		\end{column}%
+		\hfill%
+		\begin{column}{.48\textwidth}
+			Their method :
+			\begin{enumerate}
+				\item Build state-transition graph
+				\item Reduce problem to SAT
+			\end{enumerate}
+			Pros of their method :
+			\begin{itemize}
+				\item Explanatory
+				\item General approach\\
+				Given enough cells
+			\end{itemize}
+		\end{column}%
+	\end{columns}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Open question}
+	\center
+	\large
+	How does one integrate an assumption of dynamicity into MIIC ?
+\end{frame}
+
+
+\end{document}
